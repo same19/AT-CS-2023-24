@@ -3,7 +3,8 @@ import math
 # brake_force = 500
 # gas_force = 500
 class Car:
-    def __init__(self, length=1):
+    def __init__(self, length=1, max_force = 600, map = vector(760,560)):
+        self.max_force = max_force
         self.length = length
         # self.moment = mass * (half_length**2) #moment of inertia
         self.acceleration = vector(0,0)
@@ -22,25 +23,44 @@ class Car:
         self.lateral_friction = vector(0,0)
         self.max_velocity = 1000
         self.drifting = False
+        self.target_position = vector(0,0)
         self.target_velocity = vector(0,0)
-
+        self.wheel_turn_speed = math.pi * 2/3 #radians per second
+        self.to_edge = vector(0,0)
+        self.map = map
+        self.die = False
+    def calculate_turn_radius(self):
+        if self.wheel_angle == 0:
+            self.turn_radius = 0
+        else:
+            self.turn_radius = self.length / math.radians(self.wheel_angle)
+        return self.turn_radius
+    def in_bounds(self, v):
+        if v[0] <= self.map[0]/2 and v[0] >= -self.map[0]/2 and v[1] <= self.map[1]/2 and v[1] >= -self.map[1]/2:
+            return True
+        else:
+            return False
     def turn(self, angle):
         self.new_wheel_angle = -angle   
     def brake(self):
-        self.gas_force = -1200
+        self.gas_force = -self.max_force * 1.5
     def accelerate(self):
-        self.gas_force = 600
+        self.gas_force = self.max_force
     def coast(self):
         self.gas_force = 0
     
     def update(self, dt):
-        print(self.velocity)
-        wheel_turn_speed = math.pi/3 #radians per second
+        if not self.in_bounds(self.position):
+            self.die = True
+        if self.die == True:
+            return
+        print(self.position)
+        
         self.max_wheel_angle = self.new_wheel_angle * (1-(abs(self.velocity)/self.max_velocity)**1.5)
         if self.wheel_angle < self.max_wheel_angle:
-            self.wheel_angle = min(self.max_wheel_angle, self.wheel_angle + wheel_turn_speed*dt)
+            self.wheel_angle = min(self.max_wheel_angle, self.wheel_angle + self.wheel_turn_speed*dt)
         elif self.wheel_angle > self.max_wheel_angle:
-            self.wheel_angle = max(self.max_wheel_angle, self.wheel_angle - wheel_turn_speed*dt)
+            self.wheel_angle = max(self.max_wheel_angle, self.wheel_angle - self.wheel_turn_speed*dt)
         self.wheel_direction = self.direction.rotate(self.wheel_angle)
 
 

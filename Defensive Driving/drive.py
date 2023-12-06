@@ -19,7 +19,7 @@ pygame.display.set_caption("Car Driving Game")
 # Set up the clock
 clock = pygame.time.Clock()
 
-turn_angle = math.radians(25)  # Adjust the turning angle as needed
+turn_angle = math.radians(35)  # Adjust the turning angle as needed
 max_speed = 400
 
 class Car:
@@ -141,22 +141,23 @@ def init_car_fsm(fsm, car):
 # car.front = (width//2 + 60,height//2)
 # car.back = (width//2,height//2)
 # power = 10
-car = car.Car()
-enemy = enemy_car.enemy_car(target=car, max_force = 800)
-enemy2 = enemy_car.enemy_car(target=car)
+turn_angle = math.radians(35)
+car = car.Car(max_force = 600)
+enemy = enemy_car.enemy_car(target=car, max_force = 750, max_wheel_angle = 30)
+enemy2 = enemy_car.enemy_car(target=car, max_force = 750, max_wheel_angle=30)
 FPS = 120
 
 # body = rigid_body()
 # body.set_force("engine", vector(1,0), vector(0,1))
 
-def draw_car(c):
+def draw_car(c, color = (255,0,0)):
     def flip_y(v):
         return vector(v[0], -v[1])
     center = vector(width//2, height//2) + flip_y(c.position)
-    pygame.draw.line(screen, (255,0,0), center, center + 50*flip_y(c.direction))
+    pygame.draw.line(screen, color, center, center + 50*flip_y(c.direction), width=2)
     pygame.draw.line(screen, (0,255,0), center, center + 25*flip_y(c.wheel_direction))
-    pygame.draw.line(screen, (0,0,255), center, center + 0.5*flip_y(c.lateral * c.turn_radius))
-    pygame.draw.line(screen, (0,255,255), center, center + flip_y(c.target_velocity))
+    # pygame.draw.line(screen, (0,0,255), center, center + 0.5*flip_y(c.lateral * c.turn_radius))
+    pygame.draw.line(screen, (0,0,255), center, center + flip_y(c.target_velocity))
 
 # Game loop
 while True:
@@ -186,7 +187,7 @@ while True:
     car.update(dt)
     enemy.update(dt)
     enemy2.update(dt)
-    draw_car(car)
+    draw_car(car, color=(255,255,0))
     draw_car(enemy)
     draw_car(enemy2)
 
