@@ -6,6 +6,7 @@ from fsm import FSM
 import numpy as np
 from rigid_body import rigid_body
 import car
+import enemy_car
 
 # Initialize Pygame
 pygame.init()
@@ -18,8 +19,7 @@ pygame.display.set_caption("Car Driving Game")
 # Set up the clock
 clock = pygame.time.Clock()
 
-turn_angle = math.radians(20)  # Adjust the turning angle as needed
-max_turn_angle = math.radians(45)
+turn_angle = math.radians(25)  # Adjust the turning angle as needed
 max_speed = 400
 
 class Car:
@@ -43,6 +43,7 @@ class Car:
         self.offset = vector(0,0)
         self.back = vector(0,0)
         self.front = vector(1,0)
+        self.wheel_direction = vector(1,0)
         # torque = sin(self.wheel_angle)
 
     def turn(self, angle):
@@ -63,6 +64,8 @@ class Car:
             self.wheel_angle = min(self.new_wheel_angle, self.wheel_angle + wheel_turn_speed*dt)
         elif self.wheel_angle > self.new_wheel_angle:
             self.wheel_angle = max(self.new_wheel_angle, self.wheel_angle - wheel_turn_speed*dt)
+
+        self.wheel_direction = self.direction.rotate(self.wheel_angle)
             
 
         steer_angle = self.wheel_angle * abs(self.velocity) / max_speed
@@ -139,10 +142,21 @@ def init_car_fsm(fsm, car):
 # car.back = (width//2,height//2)
 # power = 10
 car = car.Car()
-FPS = 60
+enemy = enemy_car.enemy_car(target=car, max_force = 800)
+enemy2 = enemy_car.enemy_car(target=car)
+FPS = 120
 
 # body = rigid_body()
 # body.set_force("engine", vector(1,0), vector(0,1))
+
+def draw_car(c):
+    def flip_y(v):
+        return vector(v[0], -v[1])
+    center = vector(width//2, height//2) + flip_y(c.position)
+    pygame.draw.line(screen, (255,0,0), center, center + 50*flip_y(c.direction))
+    pygame.draw.line(screen, (0,255,0), center, center + 25*flip_y(c.wheel_direction))
+    pygame.draw.line(screen, (0,0,255), center, center + 0.5*flip_y(c.lateral * c.turn_radius))
+    pygame.draw.line(screen, (0,255,255), center, center + flip_y(c.target_velocity))
 
 # Game loop
 while True:
@@ -168,10 +182,13 @@ while True:
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                 car.turn(0)
     screen.fill((0,0,0))
+    
     car.update(dt)
-    center = vector(width//2 + car.position[0], height//2 - car.position[1])
-    pygame.draw.line(screen, (255,0,0), tuple(center - 50*car.direction), tuple(center + 50*car.direction))
-    pygame.draw.line(screen, (0,255,0), center, tuple(center + 25*car.wheel_direction))
+    enemy.update(dt)
+    enemy2.update(dt)
+    draw_car(car)
+    draw_car(enemy)
+    draw_car(enemy2)
 
     # Update the display
     pygame.display.flip()
