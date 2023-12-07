@@ -3,9 +3,10 @@ import math
 # brake_force = 500
 # gas_force = 500
 class Car:
-    def __init__(self, length=1, max_force = 600, map = vector(760,560)):
+    def __init__(self, length=1, max_force = 600, max_wheel_angle = 25, map = vector(800,600)):
         self.max_force = max_force
         self.length = length
+        self.max_turn_angle = math.radians(max_wheel_angle)
         # self.moment = mass * (half_length**2) #moment of inertia
         self.acceleration = vector(0,0)
         self.velocity = vector(0,0)
@@ -21,14 +22,13 @@ class Car:
         self.new_wheel_angle = 0
         self.lateral = vector(0,0)
         self.lateral_friction = vector(0,0)
-        self.max_velocity = 2000
+        self.max_velocity = 1750
         self.drifting = False
-        self.target_position = vector(0,0)
         self.target_velocity = vector(0,0)
         self.wheel_turn_speed = math.pi * 2/3 #radians per second
         self.to_edge = vector(0,0)
         self.map = map
-        self.die = False
+        self.alive = True
         self.drifting_allowed = True
     def calculate_turn_radius(self):
         if self.wheel_angle == 0:
@@ -42,7 +42,13 @@ class Car:
         else:
             return False
     def turn(self, angle):
-        self.new_wheel_angle = -angle   
+        self.new_wheel_angle = -angle * self.max_turn_angle  
+    def turn_right(self):
+        self.turn(1)
+    def turn_left(self):
+        self.turn(-1)
+    def turn_center(self):
+        self.turn(0)
     def brake(self):
         self.gas_force = -self.max_force * 1.5
     def accelerate(self):
@@ -52,10 +58,10 @@ class Car:
     
     def update(self, dt):
         if not self.in_bounds(self.position):
-            self.die = True
-        if self.die == True:
+            self.alive = False
+        if self.alive == False:
             return
-        print(self.position)
+        # print(self.position)
         
         self.max_wheel_angle = self.new_wheel_angle * (1-(abs(self.velocity)/self.max_velocity)**1.5)
         if self.wheel_angle < self.max_wheel_angle:
@@ -72,7 +78,7 @@ class Car:
 
         #Add lateral acceleration to damp lateral velocity
         
-        trigger_lateral_velocity = 20
+        trigger_lateral_velocity = 35
         lateral_friction_factor = 5
         backwards_friction_factor = 0.05
         right_vector = self.direction.rotate(math.radians(90))
@@ -81,11 +87,11 @@ class Car:
         backwards_friction = -1*self.velocity * abs(self.velocity) * backwards_friction_factor
         backwards_friction.resize(min(backwards_friction.norm(), self.velocity.norm() / dt))
         if abs(self.lateral_velocity) >= trigger_lateral_velocity and (self.drifting or self.gas_force < 0) and self.drifting_allowed:
-            print("drifting", abs(self.lateral_velocity))
+            # print("drifting", abs(self.lateral_velocity))
             self.drifting = True
             self.lateral_friction = -1*self.lateral_velocity * abs(self.lateral_velocity) * lateral_friction_factor
         else:
-            print("not drifting")
+            # print("not drifting")
             self.drifting = False
             self.lateral_friction = (-1 * self.lateral_velocity).normalize(self.lateral_velocity.norm() / dt/dt)
 
