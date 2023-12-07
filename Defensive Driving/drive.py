@@ -141,10 +141,10 @@ def init_car_fsm(fsm, car):
 # car.front = (width//2 + 60,height//2)
 # car.back = (width//2,height//2)
 # power = 10
-turn_angle = math.radians(35)
+turn_angle = math.radians(25)
 car = car.Car(max_force = 600)
-enemy = enemy_car.enemy_car(target=car, max_force = 750, max_wheel_angle = 30)
-enemy2 = enemy_car.enemy_car(target=car, max_force = 750, max_wheel_angle=30)
+enemy = enemy_car.enemy_car(target=car, max_force = 750, max_wheel_angle = 25)
+enemy2 = enemy_car.enemy_car(target=car, max_force = 750, max_wheel_angle = 25)
 FPS = 120
 
 # body = rigid_body()

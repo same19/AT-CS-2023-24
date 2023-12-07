@@ -11,6 +11,7 @@ class enemy_car(Car):
         self.max_velocity = 10000
         self.max_gas_force = max_force
         self.wheel_turn_speed = math.pi/2
+        self.drifting_allowed = False
     def turn(self, angle):
         self.new_wheel_angle = -angle
     def update(self, dt):
@@ -19,7 +20,8 @@ class enemy_car(Car):
         if abs(self.velocity) == 0:
             self.target_position = self.target.position
         else:
-            self.target_position = self.target.position + self.target.velocity * (abs(self.target.position-self.position)/abs(self.velocity)) #calculate where the target will theoretically be when reached
+            velocity_factor = 0.25
+            self.target_position = self.target.position + velocity_factor * self.target.velocity * (abs(self.target.position-self.position)/abs(self.velocity)) #calculate where the target will theoretically be when reached
 
         wall_aversion = 2000
         self.to_edge = vector(0,0)
@@ -60,7 +62,7 @@ class enemy_car(Car):
         #set gas_force based on how much turning
         wall_avoid_power_constant = 0 #0.1 * abs(wall_avoid_vector) #higher when closer to the wall
         wall_avoid_power = 1-((wall_avoid_power_constant)/(wall_avoid_power_constant+1))**2
-        percent_gas = 1-(1 - (cos_theta if cos_theta > 0 else 0.2) * random_coefficient * wall_avoid_power)**4
-        self.gas_force = -0.5*self.max_gas_force + 1.5*self.max_gas_force*percent_gas# * (1-abs(self.velocity)/self.max_velocity)
-
+        toward_car_power = 1#cos_theta if cos_theta > 0 else 0.2
+        percent_gas = 1-(1 - toward_car_power * random_coefficient * wall_avoid_power)**2
+        self.gas_force = -0.5*self.max_gas_force + 1.5*self.max_gas_force*percent_gas
         super().update(dt)

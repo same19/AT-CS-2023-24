@@ -21,7 +21,7 @@ class Car:
         self.new_wheel_angle = 0
         self.lateral = vector(0,0)
         self.lateral_friction = vector(0,0)
-        self.max_velocity = 1000
+        self.max_velocity = 2000
         self.drifting = False
         self.target_position = vector(0,0)
         self.target_velocity = vector(0,0)
@@ -29,6 +29,7 @@ class Car:
         self.to_edge = vector(0,0)
         self.map = map
         self.die = False
+        self.drifting_allowed = True
     def calculate_turn_radius(self):
         if self.wheel_angle == 0:
             self.turn_radius = 0
@@ -71,20 +72,22 @@ class Car:
 
         #Add lateral acceleration to damp lateral velocity
         
-        trigger_lateral_velocity = 7
-        lateral_friction_factor = 100
-        backwards_friction_factor = 0.1
+        trigger_lateral_velocity = 20
+        lateral_friction_factor = 5
+        backwards_friction_factor = 0.05
         right_vector = self.direction.rotate(math.radians(90))
         self.lateral_velocity = right_vector * right_vector.dot(self.velocity)
         self.lateral_friction = -1*self.lateral_velocity * abs(self.lateral_velocity) * lateral_friction_factor
         backwards_friction = -1*self.velocity * abs(self.velocity) * backwards_friction_factor
         backwards_friction.resize(min(backwards_friction.norm(), self.velocity.norm() / dt))
-        if abs(self.lateral_velocity) > trigger_lateral_velocity:
+        if abs(self.lateral_velocity) >= trigger_lateral_velocity and (self.drifting or self.gas_force < 0) and self.drifting_allowed:
+            print("drifting", abs(self.lateral_velocity))
             self.drifting = True
-            self.lateral_friction = (-1 * self.lateral_velocity).normalize(self.lateral_velocity.norm() / dt/dt)
-        else:
-            self.drifting = False
             self.lateral_friction = -1*self.lateral_velocity * abs(self.lateral_velocity) * lateral_friction_factor
+        else:
+            print("not drifting")
+            self.drifting = False
+            self.lateral_friction = (-1 * self.lateral_velocity).normalize(self.lateral_velocity.norm() / dt/dt)
 
         self.acceleration += (backwards_friction + self.lateral_friction) * dt
 
