@@ -6,6 +6,7 @@ class Car:
     def __init__(self, length=1, max_force = 600, max_wheel_angle = 25, map = vector(800,600)):
         self.max_force = max_force
         self.length = length
+        self.width = self.length/5
         self.max_turn_angle = math.radians(max_wheel_angle)
         # self.moment = mass * (half_length**2) #moment of inertia
         self.acceleration = vector(0,0)
@@ -30,6 +31,7 @@ class Car:
         self.map = map
         self.alive = True
         self.drifting_allowed = True
+        self.turn_center_pos = vector(0,0)
     def calculate_turn_radius(self):
         if self.wheel_angle == 0:
             self.turn_radius = 0
@@ -41,6 +43,47 @@ class Car:
             return True
         else:
             return False
+    def box(self):
+        corner_list = [(1,1), (1,-1), (-1,-1), (-1,1)]
+        return [self.position + vector(self.length/2*i[0],self.width*i[1]).rotate(-self.direction.angle(vector(1,0))) for i in corner_list]
+    def collide_point(self, v):
+        prev_index = -1
+        box = self.box()
+        for index in range(len(box)):
+            side_center = (box[index] + box[prev_index])/2
+            if (side_center - self.position).dot(side_center - v) < 0:
+                # print("FALSE", index)
+                return False
+            prev_index = index
+        return True
+    def collide_car(self, c):
+        #if any corner is in the other car
+        #also check evenly spaced points along each edge
+        for corner in self.box():
+            if c.collide_point(corner):
+                return True
+        for corner in c.box():
+            if self.collide_point(corner):
+                return True
+        
+        prev_index = -1
+        box = self.box()
+        points_per_edge = 4
+        for index in range(len(box)):
+            for point_num in range(points_per_edge):
+                point = (point_num * box[index] + (points_per_edge-point_num) * box[prev_index])/(points_per_edge)
+                if c.collide_point(point):
+                    return True
+            prev_index = index
+        prev_index = -1
+        box = c.box()
+        for index in range(len(box)):
+            for point_num in range(points_per_edge):
+                point = (point_num * box[index] + (points_per_edge-point_num) * box[prev_index])/(points_per_edge)
+                if self.collide_point(point):
+                    return True
+            prev_index = index
+        return False
     def turn(self, angle):
         self.new_wheel_angle = -angle * self.max_turn_angle  
     def turn_right(self):
@@ -60,8 +103,9 @@ class Car:
         if not self.in_bounds(self.position):
             self.alive = False
         if self.alive == False:
+            self.velocity = vector(0,0)
+            self.acceleration = vector(0,0)
             return
-        # print(self.position)
         
         self.max_wheel_angle = self.new_wheel_angle * (1-(abs(self.velocity)/self.max_velocity)**1.5)
         if self.wheel_angle < self.max_wheel_angle:
@@ -78,9 +122,9 @@ class Car:
 
         #Add lateral acceleration to damp lateral velocity
         
-        trigger_lateral_velocity = 35
+        trigger_lateral_velocity = 15
         lateral_friction_factor = 5
-        backwards_friction_factor = 0.05
+        backwards_friction_factor = 0.2
         right_vector = self.direction.rotate(math.radians(90))
         self.lateral_velocity = right_vector * right_vector.dot(self.velocity)
         self.lateral_friction = -1*self.lateral_velocity * abs(self.lateral_velocity) * lateral_friction_factor
@@ -101,7 +145,7 @@ class Car:
         lateral_angle = -90 if self.wheel_angle < 0 else 90
         self.lateral = self.direction.rotate(math.radians(lateral_angle))
 
-        turn_correction_constant = 2
+        turn_correction_constant = 100
 
         if self.wheel_angle != 0:
             self.turn_radius = self.length / math.radians(self.wheel_angle) # in radians

@@ -1,12 +1,12 @@
 import pygame
 import sys
-import math
 from vector import vector
 from fsm import FSM
 import numpy as np
 from rigid_body import rigid_body
 import car as car_module
 import enemy_car
+import time
 
 # Initialize Pygame
 pygame.init()
@@ -18,101 +18,6 @@ pygame.display.set_caption("Car Driving Game")
 
 # Set up the clock
 clock = pygame.time.Clock()
-
-turn_angle = math.radians(35)  # Adjust the turning angle as needed
-max_speed = 400
-
-# class Car:
-#     def __init__(self):
-#         self.original_image = None
-#         self.original_center = None
-#         self.image = None
-#         self.rect = None
-#         self.velocity = vector(1,0)
-#         self.position = vector(0,0)
-#         self.direction = vector(1,0)
-#         self.new_forward_vector = vector(1,0)
-#         self.gas_acceleration = 0
-#         self.acceleration = vector(0,0)
-#         self.torque = 0
-#         self.angle = 0
-#         self.new_wheel_angle = 0
-#         self.wheel_angle = 0
-#         self.angular_velocity = 0
-#         self.drifting = False
-#         self.offset = vector(0,0)
-#         self.back = vector(0,0)
-#         self.front = vector(1,0)
-#         self.wheel_direction = vector(1,0)
-#         # torque = sin(self.wheel_angle)
-
-#     def turn(self, angle):
-#         self.new_wheel_angle = -angle
-#         # if abs(self.wheel_angle + angle) < max_turn_angle:
-#             # self.wheel_angle += angle
-#         # self.torque = 50 * math.sin(angle)
-#     def brake(self):
-#         self.gas_acceleration = -1000
-#     def coast(self):
-#         self.gas_acceleration = 0
-#     def accelerate(self):
-#         self.gas_acceleration = 1000
-#     def update(self, dt):
-#         # print(self.wheel_angle)
-#         wheel_turn_speed = math.pi/2 #radians per second
-#         if self.wheel_angle < self.new_wheel_angle:
-#             self.wheel_angle = min(self.new_wheel_angle, self.wheel_angle + wheel_turn_speed*dt)
-#         elif self.wheel_angle > self.new_wheel_angle:
-#             self.wheel_angle = max(self.new_wheel_angle, self.wheel_angle - wheel_turn_speed*dt)
-
-#         self.wheel_direction = self.direction.rotate(self.wheel_angle)
-            
-
-#         steer_angle = self.wheel_angle * abs(self.velocity) / max_speed
-#         self.new_forward_vector = self.direction.rotate(steer_angle)
-#         new_forward_vector = self.new_forward_vector
-#         amount = 0.1
-#         if self.drifting:
-#             amount = 0.3
-#         self.direction = amount*(new_forward_vector - self.direction) + self.direction
-#         self.direction.resize(1)
-#         # self.direction = new_forward_vector
-
-
-#         current_speed = abs(self.velocity)
-#         # if current_speed < max_speed:
-#         self.velocity += self.gas_acceleration * self.direction * dt
-#         self.acceleration = self.gas_acceleration * self.direction * dt
-
-#         trigger_lateral_velocity = 7
-#         lateral_friction_factor = 10
-#         backwards_friction_factor = 0.005
-#         right_vector = self.direction.rotate(math.radians(90))
-#         lateral_velocity = right_vector * right_vector.dot(self.velocity)
-#         if abs(lateral_velocity) > trigger_lateral_velocity:
-#             self.drifting = True
-#             lateral_friction_factor = 0.5
-#         else:
-#             self.drifting = False
-#         lateral_friction = -1*lateral_velocity * abs(lateral_velocity) * lateral_friction_factor
-#         backwards_friction = -1*self.velocity * abs(self.velocity) * backwards_friction_factor
-#         backwards_friction.resize(min(backwards_friction.norm(), self.velocity.norm() / dt))
-#         lateral_friction.resize(min(lateral_friction.norm(), lateral_velocity.norm() / dt))
-#         self.velocity += (backwards_friction + lateral_friction) * dt
-#         self.acceleration += (backwards_friction + lateral_friction) * dt
-
-#         self.position += self.velocity * dt
-#         # https://gamedev.stackexchange.com/questions/26845/i-am-looking-to-create-realistic-car-movement-using-vectors
-#         self.angle = -self.direction.angle(vector(1,0))
-#         print(abs(lateral_velocity))
-#         car.rect.y = height - self.position[1]
-#         car.rect.x = self.position[0]
-#         self.image = pygame.transform.rotate(self.original_image, math.degrees(self.angle))
-#         self.offset = vector(-15,0).rotate(self.angle)
-#         self.offset.arr[1] = -self.offset[1]
-#         self.offset = vector(0,0)
-#         # print(self.offset)
-#         self.rect = self.image.get_rect(center=tuple(vector(self.rect.center)-self.offset))
 
 def init_gas_fsm(car):
     fsm = FSM("Coasting")
@@ -137,33 +42,59 @@ def init_turn_fsm(car):
     fsm.add_transition("Right", "Center",car.turn_right,"Right")
     fsm.add_transition("Left", "Center",car.turn_left,"Left")
     return fsm
+def init_enemy_fsm(enemy):
+    fsm = FSM("Chasing")
+    fsm.add_transition("Next", "Avoiding", enemy.chase, "Chasing")
+    fsm.add_transition("Next", "Chasing", enemy.avoid, "Avoiding")
+    return fsm
+def spawn_car():
+    c = car_module.Car(length=50, max_force = 500, max_wheel_angle = 25, map=map_dimensions)
+    c.position = vector(width//2 - c.length, -height//2 + c.length)
+    c.direction = vector(-1,0)
+    return c
+def spawn_enemy_car(car):
+    e = enemy_car.enemy_car(length=50,target=(car,1), max_force = 700, max_wheel_angle = 30, map=map_dimensions)
+    e.position = vector(-width//2 + e.length, height//2 - e.length)
+    return e
 
-
-
-map_dimensions = (width*0.9, height*0.9)
-turn_angle = math.radians(25)
-car = car_module.Car(max_force = 600, max_wheel_angle = 25, map=map_dimensions)
+map_dimensions = (width, height)
+car = spawn_car()
 gas_fsm = init_gas_fsm(car)
 turn_fsm = init_turn_fsm(car)
-enemy = enemy_car.enemy_car(targets=[(car,1)], max_force = 700, max_wheel_angle = 30, map=map_dimensions)
-enemy2 = enemy_car.enemy_car(targets=[(car,1)], max_force = 700, max_wheel_angle = 30, map=map_dimensions)
-# enemy.targets.append((enemy2, -0.1))
-# enemy2.targets.append((enemy, -0.1))
-FPS = 120
 
-# body = rigid_body()
-# body.set_force("engine", vector(1,0), vector(0,1))
+enemies = [spawn_enemy_car(car)]
+enemy_fsm = [init_enemy_fsm(enemy) for enemy in enemies]
+enemies_hitting_car = [False for i in enemies]
+FPS = 60
+
 
 def draw_car(c, color = (255,0,0)):
+    scale = 1
+    screen_center = vector(width//2, height//2)
     def flip_y(v):
         return vector(v[0], -v[1])
-    center = vector(width//2, height//2) + flip_y(c.position)
-    pygame.draw.line(screen, color, center - 25*flip_y(c.direction), center + 25*flip_y(c.direction), width=2)
-    pygame.draw.line(screen, (0,255,0), center, center + 12.5*flip_y(c.wheel_direction))
-    # pygame.draw.line(screen, (0,0,255), center, center + 0.5*flip_y(c.lateral * c.turn_radius))
+    center = screen_center + scale*flip_y(c.position)
+    m_pos = flip_y(pygame.mouse.get_pos()-screen_center)/scale
+    # if c.collide_point(m_pos):
+    #     color = (255,255,255)
+    if c == car and health < 100:
+        pygame.draw.line(screen, color, center - scale*health/100*c.length/2*flip_y(c.direction), center + scale*health/100*c.length/2*flip_y(c.direction), width=3)
+    else:
+        pygame.draw.line(screen, color, center - scale*c.length/2*flip_y(c.direction), center + scale*c.length/2*flip_y(c.direction), width=3)
+    pygame.draw.polygon(screen, color=color, points=[screen_center + scale*flip_y(corner) for corner in c.box()])
+    pygame.draw.line(screen, (0,255,0), center, center + (scale/2)*flip_y(c.wheel_direction))
     pygame.draw.line(screen, (0,0,255), center, center + flip_y(c.target_velocity))
+    pygame.draw.line(screen, (0,255,255), center, center + scale*flip_y(c.turn_center_pos))
 
+    box = c.box()
+    prev_index = -1
+    for index in range(len(box)):
+        pygame.draw.line(screen, (255,255,255), center + scale*(flip_y(box[prev_index]-c.position)),center + scale*(flip_y(box[index]-c.position)))
+        prev_index = index
 # Game loop
+health = 100
+start_time = time.time_ns()
+add_enemy_delay = 15 #seconds
 while True:
     dt = clock.tick(FPS)/1000
     for event in pygame.event.get():
@@ -193,18 +124,64 @@ while True:
     screen.fill((0,0,0))
     
     car.update(dt)
-    enemy.update(dt)
-    enemy2.update(dt)
-    if not enemy.alive:
-        enemy = enemy_car.enemy_car(targets=[(car,0)], max_force = 700, max_wheel_angle = 30, map=map_dimensions)
-    if not enemy2.alive:
-        enemy2 = enemy_car.enemy_car(targets=[(car,0)], max_force = 700, max_wheel_angle = 30, map=map_dimensions)
     draw_car(car, color=(255,255,0))
-    draw_car(enemy)
-    draw_car(enemy2)
+    if not car.alive:
+        health -= 5
+        print(health)
+        car = spawn_car()
+        gas_fsm = init_gas_fsm(car)
+        turn_fsm = init_turn_fsm(car)
+        for enemy in enemies:
+            enemy.set_target(car)
+    # print((time.time_ns() - start_time) % (add_enemy_delay * 1000000000) - 1000000000/FPS)
+    if (time.time_ns() - start_time) % (add_enemy_delay * 1000000000) < 1000000000/FPS:
+        new_enemy = spawn_enemy_car(car)
+        enemies.append(new_enemy)
+        enemy_fsm.append(init_enemy_fsm(new_enemy))
+        enemies_hitting_car.append(False)
+    for i in range(len(enemies)):
+        color = (255,0,0) if enemies[i].chasing else (0,255,0)
+        enemies[i].update(dt)
+        if not enemies[i].alive:
+            health += 3/len(enemies)
+            print(health)
+            state = enemies[i].chasing
+            next_t = enemies[i].next_time_change_state
+            enemies[i] = spawn_enemy_car(car)
+            enemy_fsm[i] = init_enemy_fsm(enemies[i])
+            if state != enemies[i].chasing:
+                enemy_fsm[i].process("Next")
+            enemies[i].next_time_change_state = next_t
+        if enemies[i].collide_car(car):
+            color = (255,255,255)
+            if enemies_hitting_car[i] == False:
+                health += 10*(-1 if enemies[i].chasing else 1)
+                print(health)
+                enemies_hitting_car[i] = True
+        else:
+            enemies_hitting_car[i] = False
+        if time.time_ns() > enemies[i].next_time_change_state:
+            # print("CHANGE STATE TRIGGER", i)
+            enemy_fsm[i].process("Next")
+        draw_car(enemies[i], color=color)
+
+    font = pygame.font.Font('freesansbold.ttf', 32)
+    # create a text surface object,
+    # on which text is drawn on it.
+    text = font.render(str(int(health)), True, (255,255,255))
+    # create a rectangular object for the
+    # text surface object
+    textRect = text.get_rect()
+    # set the center of the rectangular object.
+    textRect.center = (width - 60, 30)
+    screen.blit(text, textRect)
 
     # Update the display
     pygame.display.flip()
-
     # Cap the frame rate
     clock.tick(FPS)  # Adjust the value to control the speed of the game
+    if health <= 0:
+        print("You died!")
+        print("Score:", (time.time_ns()-start_time)/1000000000)
+        time.sleep(1)
+        break
