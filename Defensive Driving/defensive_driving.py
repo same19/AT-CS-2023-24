@@ -17,7 +17,7 @@ import time
 pygame.init()
 
 # Set up the display
-width, height = 800, 600
+width, height = 800,600
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Car Driving Game")
 
@@ -55,14 +55,14 @@ def init_enemy_fsm(enemy):
 
 # Spawn player's car
 def spawn_car():
-    c = car_module.Car(length=50, max_force=500, max_wheel_angle=25, map=map_dimensions)
+    c = car_module.Car(length=50, max_force=800, max_wheel_angle=25, map=map_dimensions)
     c.position = vector(width // 2 - c.length, -height // 2 + c.length)
     c.direction = vector(-1, 0)
     return c
 
 # Spawn enemy car
 def spawn_enemy_car(car):
-    e = enemy_car.enemy_car(length=50, target=(car, 1), max_force=700, max_wheel_angle=30, map=map_dimensions)
+    e = enemy_car.enemy_car(length=50, target=(car, 1), max_force=900, max_wheel_angle=30, map=map_dimensions)
     e.position = vector(-width // 2 + e.length, height // 2 - e.length)
     return e
 
