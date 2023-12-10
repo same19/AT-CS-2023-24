@@ -1,6 +1,8 @@
 """
 ChatGPT supplied a framework for working with pygame. I coded almost everything else. Note that ChatGPT helped organize code at the end as well but did not change any functionality.
 
+Storyline: you are in a lot of trouble - and now there are enemies chasing you! Escape them for as long as possible, but remember to try to hit them when they are most vulnerable (when they turn green).
+
 Author: Sam Engel
 Date: December 12th, 2023
 """
