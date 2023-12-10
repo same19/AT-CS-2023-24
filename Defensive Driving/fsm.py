@@ -14,6 +14,8 @@ objects. You use the add_transition() method to add to the transition table.
 @version: 2022
 """
 
+#Some method implementations by Sam Engel
+
 
 class FSM:
     def __init__(self, initial_state):
