@@ -30,6 +30,7 @@ class Car:
         self.new_wheel_angle = 0
         self.lateral = vector(0, 0)
         self.lateral_friction = vector(0, 0)
+        self.lateral_friction_factor = 10
         self.drifting = False
         self.target_velocity = vector(0, 0)
         self.wheel_turn_speed = math.pi * 2 / 3  # radians per second
@@ -145,17 +146,16 @@ class Car:
 
         #Lateral and backwards friction to keep car moving realistically
         trigger_lateral_velocity = 15
-        lateral_friction_factor = 5
         backwards_friction_factor = 0.2
         right_vector = self.direction.rotate(math.radians(90))
         self.lateral_velocity = right_vector * right_vector.dot(self.velocity)
-        self.lateral_friction = -1 * self.lateral_velocity * abs(self.lateral_velocity) * lateral_friction_factor
+        self.lateral_friction = -1 * self.lateral_velocity * abs(self.lateral_velocity) * self.lateral_friction_factor
         backwards_friction = -1 * self.velocity * abs(self.velocity) * backwards_friction_factor
         backwards_friction.resize(min(backwards_friction.norm(), self.velocity.norm() / dt))
         if abs(self.lateral_velocity) >= trigger_lateral_velocity and (self.drifting or self.gas_force < 0) and self.drifting_allowed:
             # Enable drifting if conditions are met
             self.drifting = True
-            self.lateral_friction = -1 * self.lateral_velocity * abs(self.lateral_velocity) * lateral_friction_factor
+            self.lateral_friction = -1 * self.lateral_velocity * abs(self.lateral_velocity) * self.lateral_friction_factor
         else:
             self.drifting = False
             self.lateral_friction = (-1 * self.lateral_velocity).normalize(self.lateral_velocity.norm() / dt / dt)

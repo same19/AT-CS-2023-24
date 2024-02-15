@@ -29,7 +29,8 @@ class enemy_car(Car):
         # Movement
         self.max_gas_force = max_force
         self.wheel_turn_speed = math.pi / 2
-        self.drifting_allowed = False
+        self.drifting_allowed = True
+        self.lateral_friction_factor = 15
         self.max_velocity = 1250
 
         # Enemy chasing/avoiding state
